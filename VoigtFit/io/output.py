@@ -1827,6 +1827,8 @@ def sum_components(dataset, ion, components=None, rejection=True):
     for num in components:
         parname = 'logN%i_%s' % (num, ion)
         par = dataset.best_fit[parname]
+        if par.stderr is None:
+            print(f'Este va a petar: {num}, {ion}')
         if par.stderr < 1.0 and rejection:
             logN.append(par.value)
             logN_err.append(par.stderr)

@@ -5,6 +5,7 @@ from VoigtFit import show_transitions
 from scipy.signal import fftconvolve
 from scipy.signal.windows import gaussian
 
+
 # --- INPUT ---
 SNR = 60.
 wl = np.arange(1000., 3000., 0.010)
@@ -58,6 +59,7 @@ plt.plot(wl, f_obs)
 
 plt.ylabel("Normalized flux")
 plt.xlabel("Wavelength  [Angstrom]")
+plt.savefig('image_thing.png')
 
 data = np.column_stack([wl, f_obs, P_obs/SNR])
 with open('thermal_model_2comp.dat', 'w') as output_file:

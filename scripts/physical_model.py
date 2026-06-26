@@ -1,13 +1,13 @@
 # -*- coding: UTF-8 -*-
 __author__ = 'Jens-Kristian Krogager'
 
+import matplotlib.pyplot as plt
 import numpy as np
-import VoigtFit
-
+from matplotlib import pyplot as plt
 
 def print_T_model_pars(dataset, filename=None):
     """Print the turbulence and T parameters for physical model."""
-    N_comp = len(dataset.components.values()[0])
+    N_comp = len(list(dataset.components.values())[0])
     print("")
     print(u"  No:     Temperature [K]       Turbulence [km/s]")
     if filename:
@@ -44,11 +44,20 @@ res = 6.6
 
 wl, spec, err = np.loadtxt(fname, unpack=True)
 
+fig, ax = plt.subplots()
+ax.step(wl, spec)
+for x in np.array([1250, 1302, 1334, 1355, 1304]) * (1 + z_DLA):
+    ax.axvline(x=x * (1 + 0.0033), color='black', linestyle='--')
+    ax.axvline(x=x * (1 + 0.00345), color='black', linestyle='--')
+    ax.axvline(x=x * (1 + 0.0036), color='blue', linestyle='--')
+plt.show()
+
 # -- Here you can load your data in any way you wish
 #    Only requirement is that wl, spec, and err have the same dimensions.
 
 # -- A dataset which has already been defined can be loaded like this:
 # dataset = VoigtFit.LoadDataSet('test_data.hdf5')
+import VoigtFit
 
 dataset = VoigtFit.DataSet(z_DLA)
 dataset.set_name('test_2comp')
@@ -62,7 +71,7 @@ dataset.add_data(wl, spec, res, err=err, normalized=True)
 # -- Define absorption lines:
 dataset.add_many_lines(['FeII_2344', 'FeII_2374', 'FeII_2382'])
 dataset.add_many_lines(['FeII_1608', 'FeII_1611'])
-dataset.add_line('FeII_2260')
+dataset.add_line('SIV_2260')
 dataset.add_line('FeII_2249')
 dataset.add_line('CrII_2056')
 dataset.add_line('CrII_2066')
@@ -70,13 +79,13 @@ dataset.add_line('CrII_2026')
 dataset.add_line('ZnII_2026')
 dataset.add_line('CrII_2062')
 dataset.add_line('ZnII_2062')
+
 # -- dataset.add_many_lines is equivalent to dataset.add_lines:
 dataset.add_many_lines(['CII_1036', 'CII_1334'])
 dataset.add_many_lines(['OI_1302', 'OI_1039', 'OI_1355'])
 dataset.add_many_lines(['SiII_1526', 'SiII_1808', 'SiII_1304'])
 dataset.add_many_lines(['SiII_1260', 'FeII_1260', 'SII_1259'])
 dataset.add_many_lines(['SII_1250', 'SII_1253'])
-
 
 # -- If a line has been defined, and you don't want to fit it
 #    it can either be removed from the dataset completely:
@@ -124,52 +133,93 @@ dataset.copy_components(from_ion='FeII', to_ion='OI', tie_b=False)
 #    masking and normalization, as well as initiating the Parameters:
 dataset.prepare_dataset(norm=False, mask=False)
 
-# -- Define masks for individual lines:
-# dataset.mask_line('ZnII_2026')
-
-# --- This is where the magic happens ----------------------------------------
-# Set up the thermal and turbulence parameters for each component:
-dataset.pars.add('turb_0', value=5., vary=True, min=0.)
-dataset.pars.add('turb_1', value=5., vary=True, min=0.)
-
-dataset.pars.add('T_0', value=5000., vary=1, min=0.)
-dataset.pars.add('T_1', value=5000., vary=1, min=0.)
-# -- This can be defined in a for loop assuming the same intial guess for T:
-# T_init = 1.e4
-# for comp_num in range(len(dataset.components.values()[0])):
-#     dataset.pars.add('T_%i'%comp_num, value=T_init, vary=True, min=0.)
-
-# -- Now set up the links for the 'b'-parameter of each component of each ion:
-# 2k_B/m_u in (km/s)^2 units:
-K = 0.0166287
-for ion, comp in dataset.components.items():
-    N_comp = len(comp)
-    for comp_num in range(N_comp):
-        par_name = 'b%i_%s' % (comp_num, ion)
-        lines_for_ion = dataset.get_lines_for_ion(ion)
-        m_ion = lines_for_ion[0].mass
-        const = K/m_ion
-        T_num = dataset.pars['T_%i' % comp_num].value
-        b_eff = np.sqrt(5.**2 + K*T_num/m_ion)
-        model_constraint = 'sqrt((turb_%i)**2 + %.6f*T_%i)' % (comp_num,
-                                                               const,
-                                                               comp_num)
-        dataset.pars[par_name].set(expr=model_constraint, value=b_eff)
+# # -- Define masks for individual lines:
+# # dataset.mask_line('ZnII_2026')
+#
+# # --- This is where the magic happens ----------------------------------------
+# # Set up the thermal and turbulence parameters for each component:
+# dataset.pars.add('turb_0', value=5., vary=True, min=0.)
+# dataset.pars.add('turb_1', value=5., vary=True, min=0.)
+#
+# dataset.pars.add('T_0', value=5000., vary=1, min=0.)
+# dataset.pars.add('T_1', value=5000., vary=1, min=0.)
+# # -- This can be defined in a for loop assuming the same intial guess for T:
+# # T_init = 1.e4
+# # for comp_num in range(len(dataset.components.values()[0])):
+# #     dataset.pars.add('T_%i'%comp_num, value=T_init, vary=True, min=0.)
+#
+# # -- Now set up the links for the 'b'-parameter of each component of each ion:
+# # 2k_B/m_u in (km/s)^2 units:
+# K = 0.0166287
+# for ion, comp in dataset.components.items():
+#     N_comp = len(comp)
+#     for comp_num in range(N_comp):
+#         par_name = 'b%i_%s' % (comp_num, ion)
+#         lines_for_ion = dataset.get_lines_for_ion(ion)
+#         m_ion = lines_for_ion[0].mass
+#         const = K/m_ion
+#         T_num = dataset.pars['T_%i' % comp_num].value
+#         b_eff = np.sqrt(5.**2 + K*T_num/m_ion)
+#         model_constraint = 'sqrt((turb_%i)**2 + %.6f*T_%i)' % (comp_num,
+#                                                                const,
+#                                                                comp_num)
+#         dataset.pars[par_name].set(expr=model_constraint, value=b_eff)
 
 # ---------------------------------------------------------------------------
 
 # -- Fit the dataset:
-popt, chi2 = dataset.fit(verbose=True, plot=False, factor=10.)
+popt, chi2 = dataset.fit(verbose=True, factor=10.)
 
-dataset.plot_fit(filename=dataset.name)
+print(f'Salvando: {dataset.name}')
+dataset.plot_fit(filename=f'{dataset.name}.pdf')
 
 # -- Print total column densities
 dataset.print_total()
 
-if logNHI:
-    dataset.print_metallicity(*logNHI)
-
-print_T_model_pars(dataset)
+# if logNHI:
+#     dataset.print_metallicity(*logNHI)
+#
+# print_T_model_pars(dataset)
 
 # -- Save the dataset to file: taken from the dataset.name
-dataset.save()
+dataset.save(dataset.name)
+
+
+'''
+
+Sin el rollo
+----------------------
+  Best fit parameters:
+----------------------
+
+				b			log(N)
+CII  1036, 1334
+v = -44.5 ± 0.0              5.20 ±   0.03      14.8187 ±  0.0114
+v = +45.1 ± 0.0              6.18 ±   0.02      14.3299 ±  0.0022
+
+CrII  2026, 2056, 2062, 2066
+v = -44.5 ± 0.0              4.56 ±   0.32      12.5755 ±  0.0147
+v = +45.1 ± 0.0              4.49 ±   0.95      12.1014 ±  0.0440
+
+FeII  1260, 1608, 1611, 2249
+      2344, 2374, 2382
+v = -44.5 ± 0.0              4.72 ±   0.01      14.0626 ±  0.0016
+v = +45.1 ± 0.0              5.42 ±   0.01      13.5866 ±  0.0015
+
+OI  1039, 1302, 1355
+v = -44.5 ± 0.0              5.06 ±   0.01      15.3509 ±  0.0035
+v = +45.1 ± 0.0              5.97 ±   0.02      14.8692 ±  0.0030
+
+SII  1250, 1253, 1259
+v = -44.5 ± 0.0              5.00 ±   0.13      14.1673 ±  0.0058
+v = +45.1 ± 0.0              5.62 ±   0.42      13.6890 ±  0.0183
+
+SiII  1260, 1304, 1526, 1808
+v = -44.5 ± 0.0              4.88 ±   0.01      14.4307 ±  0.0034
+v = +45.1 ± 0.0              5.65 ±   0.01      13.9504 ±  0.0015
+
+ZnII  2026, 2062
+v = -44.5 ± 0.0              4.96 ±   0.25      12.0156 ±  0.0112
+v = +45.1 ± 0.0              5.37 ±   0.77      11.5400 ±  0.0346
+
+'''

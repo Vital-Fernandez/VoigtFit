@@ -1368,7 +1368,8 @@ class DataSet(object):
             new_comp = copy.deepcopy(comp)
             has_active_ion = self.has_ion(from_ion, active_only=True)
             if logN:
-                new_comp.logN += offset_N
+                # new_comp.logN += offset_N
+                new_comp.logN = logN
             if tie_z and has_active_ion:
                 new_comp.tie_z = 'z%i_%s' % (num, from_ion)
             if tie_b and has_active_ion:
